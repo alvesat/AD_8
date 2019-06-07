@@ -53,14 +53,24 @@ nomes_uf
 
 # 5.5.2.1
 
-link <- "https://www.camara.leg.br/internet/deputado/DepNovos_Lista.asp?Legislatura=54&Partido=QQ&SX=QQ&Todos=None&UF=QQ&condic=QQ&forma=lista&nom"
+  # Atribuindo o link a um objeto
 
-bd <- link %>%
-httr::GET() %>%
-xml2::read_html() %>%
-rvest::html_nodes('ul') %>%
-rvest::html_table(header = TRUE)
+url <- "https://www.camara.leg.br/internet/deputado/DepNovos_Lista.asp?Legislatura=54&Partido=QQ&SX=QQ&Todos=None&UF=QQ&condic=QQ&forma=lista&nom"
 
-class(bd)
+  # Capturando o código HTML
 
+pagina <- readLines(url)
+
+pagina <- htmlParse(pagina)
+
+pagina <- xmlRoot(pagina)
+
+
+nodes_link <- getNodeSet(pagina, '//*[@id="content"]')
+
+nome_parlamentar <- xpathSApply(pagina, '//*[@id="content"]/ul/li/a', xmlValue)
+
+site <- xpathSApply(pagina, '//*[@id="content"]/ul/li/a', xmlGetAttr, name = "href")
+
+dados <- data.frame(nome_parlamentar, site)
 
