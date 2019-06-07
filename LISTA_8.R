@@ -51,7 +51,7 @@ nomes_uf <- gsub("<b>", "", nomes_uf)
 
 nomes_uf
 
-# 5.5.2.1
+# 5.5.2.1 (https://github.com/leobarone/Webscraping_R_XML_Legislativo_2016_1/blob/master/Atividade_2.Rmd)
 
   # Atribuindo o link a um objeto
 
@@ -73,4 +73,57 @@ nome_parlamentar <- xpathSApply(pagina, '//*[@id="content"]/ul/li/a', xmlValue)
 site <- xpathSApply(pagina, '//*[@id="content"]/ul/li/a', xmlGetAttr, name = "href")
 
 dados <- data.frame(nome_parlamentar, site)
+
+save(dados, file = "dados_parlamentar.RDta")
+
+
+# 5.7.0.1
+
+if(require(httr) == F) install.packages('httr'); require(httr)
+if(require(XML) == F) install.packages('XML'); require(XML)                                                         
+if(require(xml2) == F) install.packages('xml2'); require(xml2)
+
+link <- paste0("http://www.camara.leg.br/SitCamaraWS/Deputados.asmx/ObterDeputados")
+
+response <- GET(link)
+
+data <- xmlParse(response, encoding = "UTF-8")
+ls <- xmlToList(data)
+
+x <- ls[lapply(ls, '[[',"uf")=='PE']
+
+names(x$deputado)
+
+ideCadastro <- NULL
+condicao <- NULL 
+matricula <- NULL 
+idParlamentar <- NULL
+nome <- NULL 
+nomeParlamentar <- NULL 
+urlFoto <- NULL 
+sexo <- NULL 
+uf <- NULL
+partido <- NULL 
+email <- NULL
+
+
+for(i in 1:length(x)){
+  ideCadastro[i] <- x[[i]]$ideCadastro
+  condicao[i] <- x[[i]]$condicao
+  matricula[i] <- x[[i]]$matricula
+  idParlamentar[i] <- x[[i]]$idParlamentar
+  nome[i] <- x[[i]]$nome
+  nomeParlamentar[i] <- x[[i]]$nomeParlamentar
+  urlFoto[i] <- x[[i]]$urlFoto
+  sexo[i] <- x[[i]]$sexo
+  uf[i] <- x[[i]]$uf
+  partido[i] <- x[[i]]$partido
+  email[i] <- x[[i]]$email
+}
+
+
+bd <- data.frame(ideCadastro, condicao, matricula, idParlamentar, 
+                 nome, nomeParlamentar, urlFoto, sexo, uf, partido, email)
+
+head(bd)
 
