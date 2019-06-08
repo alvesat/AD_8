@@ -127,3 +127,61 @@ bd <- data.frame(ideCadastro, condicao, matricula, idParlamentar,
 
 head(bd)
 
+# QUESTAO 3
+
+    ## Uma alternativa é por meio da API da CD
+
+if(require(RCurl) == F) install.packages('RCurl'); require(RCurl)
+if(require(httr) == F) install.packages('httr'); require(httr)
+if(require(XML) == F) install.packages('XML'); require(XML)                                                         
+if(require(xml2) == F) install.packages('xml2'); require(xml2)
+if(require(jsonlite) == F) install.packages('jsonlite'); require(jsonlite)
+
+link <- "https://dadosabertos.camara.leg.br/api/v2/deputados?idLegislatura=41&idLegislatura=42&idLegislatura=43&idLegislatura=44&idLegislatura=45&idLegislatura=46&idLegislatura=47&idLegislatura=48&idLegislatura=49&idLegislatura=50&idLegislatura=51&idLegislatura=52&idLegislatura=53&idLegislatura=54&idLegislatura=55&ordem=ASC&ordenarPor=nome"
+
+call1 <- paste(link, sep="")
+
+dep <- GET(call1)
+
+dep_text <- content(dep, "text")
+
+dep_text_json <- fromJSON(dep_text, flatten = TRUE)
+
+dep_df <- as.data.frame(dep_text_json)
+
+      # Segunda alternativa
+
+if(require(httr) == F) install.packages('httr'); require(httr)
+if(require(XML) == F) install.packages('XML'); require(XML)                                                         
+if(require(xml2) == F) install.packages('xml2'); require(xml2)
+
+jump <- seq(41, 55, by = 1)
+
+site <- paste0("https://www.camara.leg.br/internet/deputado/DepNovos_Lista.asp?Legislatura=",jump,"&Partido=QQ&SX=QQ&Todos=None&UF=QQ&condic=QQ&forma=lista&nome=&ordem=nome&origem=")
+
+nome <- lapply(site, function(i) {
+  pagina <- readLines(i)
+  
+  pagina <- htmlParse(pagina)
+  
+  pagina <- xmlRoot(pagina)
+  
+  
+  nodes_link <- getNodeSet(pagina, '//*[@id="content"]')
+  
+  nome_parlamentar <- xpathSApply(pagina, '//*[@id="content"]/ul/li/a', xmlValue)
+})  
+
+site <- lapply(site, function(i) {
+  pagina <- readLines(i)
+  
+  pagina <- htmlParse(pagina)
+  
+  pagina <- xmlRoot(pagina)
+  
+  
+  nodes_link <- getNodeSet(pagina, '//*[@id="content"]')
+  
+  site <- xpathSApply(pagina, '//*[@id="content"]/ul/li/a', xmlGetAttr, name = "href")
+})  
+
