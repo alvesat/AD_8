@@ -337,7 +337,62 @@ site <- as.data.frame(site)
  
  map
  
+ ###### EXERCICIO 5 ###################################################################### 
  
+ # pacotes necessários
+ 
+ if(require(rgdal) == F) install.packages("rgdal"); require(rgdal)
+ if(require(maptools) == F) install.packages("maptools"); require(maptools)
+ if(require(ggmap) == F) install.packages("ggmap"); require(ggmap)
+ if(require(mapproj) == F) install.packages("mapproj"); require(mapproj)
+ if(require(ggplot2) == F) install.packages("ggplot2"); require(ggplot2)
+ if(require(tidyverse) == F) install.packages("tidyverse"); require(tidyverse)
+ 
+ # lendo o shapefile
+ 
+ shapefile_br <- readOGR("BRMUE250GC_SIR.shp")
+ 
+ plot(shapefile_br)
+ 
+ shapefile_br@data
 
+ # convertendo o shapefile para dataframe 
+ 
+ shapefile_df <- fortify(shapefile_br)
+ 
+ shapefile_data <- fortify(shapefile_br@data)
+ 
+ shapefile_data$id <- row.names(shapefile_data) 
+ 
+ shapefile_df <- full_join(shapefile_df, shapefile_data, by="id")
+ 
+ # Remover PE do banco
+ 
+ shapefile_df <- shapefile_df[!grepl('^26', shapefile_df$CD_GEOCMU),]
+ 
+ # abrindo banco com IDHM
+ 
+ AtlasBrasil_Consulta <- read_excel("AtlasBrasil_Consulta_br.xlsx")
+ 
+ # mergindo com shapefile_df por codigo do mun
+ 
+ AtlasBrasil_Consulta$CD_GEOCMU <- AtlasBrasil_Consulta$Código
+ 
+ shapefile_df <- merge(shapefile_df, AtlasBrasil_Consulta, by = "CD_GEOCMU", all.x = TRUE)
+ 
+ 
+ # mapa
+ 
+ map <- ggplot() + geom_polygon(data = shapefile_df,
+                                aes(x = long, y = lat, group = group, fill = IDHM),
+                                colour = "gray", size = .2) +
+   theme_void() + # fundo vazio
+   scale_fill_gradient2(low = "#fff7bc", mid="#fec44f", high = "#d95f0e", # escala laranja
+                        midpoint = median(shapefile_df$IDHM),
+                        limits = range(shapefile_df$IDHM)) +
+   coord_map()
+ 
+ map
 
+gc()
  
