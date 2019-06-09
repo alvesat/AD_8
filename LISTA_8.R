@@ -157,9 +157,11 @@ bd <- data.frame(ideCadastro, condicao, matricula, idParlamentar,
 
 head(bd)
 
-# QUESTAO 3
+###### EXERCICIO 3 ######################################################################
 
-    ## Uma alternativa é por meio da API da CD
+    # Uma alternativa é por meio da API da CD #
+
+  # carregando pacotes
 
 if(require(RCurl) == F) install.packages('RCurl'); require(RCurl)
 if(require(httr) == F) install.packages('httr'); require(httr)
@@ -167,37 +169,54 @@ if(require(XML) == F) install.packages('XML'); require(XML)
 if(require(xml2) == F) install.packages('xml2'); require(xml2)
 if(require(jsonlite) == F) install.packages('jsonlite'); require(jsonlite)
 
+  # obtendo link com todas as legislaturas necessárias
+
 link <- "https://dadosabertos.camara.leg.br/api/v2/deputados?idLegislatura=41&idLegislatura=42&idLegislatura=43&idLegislatura=44&idLegislatura=45&idLegislatura=46&idLegislatura=47&idLegislatura=48&idLegislatura=49&idLegislatura=50&idLegislatura=51&idLegislatura=52&idLegislatura=53&idLegislatura=54&idLegislatura=55&ordem=ASC&ordenarPor=nome"
+
+  # paste 
 
 call1 <- paste(link, sep="")
 
 dep <- GET(call1)
 
+  # obtendo o conteudo em texto
+
 dep_text <- content(dep, "text")
+
+  # colocando no formato JSON
 
 dep_text_json <- fromJSON(dep_text, flatten = TRUE)
 
+  # convertendo para data.frame
+
 dep_df <- as.data.frame(dep_text_json)
 
-      # Segunda alternativa
+# salvando em rdata
 
-# pacotes necessarios
+save(dep_df, file = "deputadas.rda")
+
+
+
+      # Segunda alternativa #
+
+
+  # pacotes necessarios
 
 if(require(httr) == F) install.packages('httr'); require(httr)
 if(require(XML) == F) install.packages('XML'); require(XML)                                                         
 if(require(xml2) == F) install.packages('xml2'); require(xml2)
 if(require(plyr) == F) install.packages('plyr'); require(plyr)
 
-# criando vetor com as legislaturas para o loop
-
+  # criando vetor com as legislaturas para o loop
+  
 jump <- seq(41, 55, by = 1)
 
-# site 
+  # site 
 
 site <- paste0("https://www.camara.leg.br/internet/deputado/DepNovos_Lista.asp?Legislatura=",jump,"&Partido=QQ&SX=QQ&Todos=None&UF=QQ&condic=QQ&forma=lista&nome=&ordem=nome&origem=")
 
 
-# usando lapply para coletar o nome dos parlamentares de todas as legislaturas
+  # usando lapply para coletar o nome dos parlamentares de todas as legislaturas
 
 nome <- lapply(site, function(i) {
   pagina <- readLines(i)
@@ -212,7 +231,7 @@ nome <- lapply(site, function(i) {
   nome_parlamentar <- xpathSApply(pagina, '//*[@id="content"]/ul/li/a', xmlValue)
 })  
 
-# usando lapply para coletar o site dos parlamentares de todas as legislaturas
+  # usando lapply para coletar o site dos parlamentares de todas as legislaturas
 
 
 site <- lapply(site, function(i) {
@@ -228,17 +247,17 @@ site <- lapply(site, function(i) {
   site <- xpathSApply(pagina, '//*[@id="content"]/ul/li/a', xmlGetAttr, name = "href")
 })  
 
-# atribuindo o numero da respectiva legislatura para cada elemento da lista em nome 
+  # atribuindo o numero da respectiva legislatura para cada elemento da lista em nome 
 
 names(nome) <- jump
 nome <- ldply(nome, data.frame)
 
-# unlist site 
+  # unlist site 
 
 site <- unlist(site)
 site <- as.data.frame(site)
 
-# juntando os dois dataframes e arrumando os nomes das variaveis
+  # juntando os dois dataframes e arrumando os nomes das variaveis
  
  deputados <- cbind(nome, site)
  
@@ -250,5 +269,75 @@ site <- as.data.frame(site)
  
  deputados$nome <- gsub('/', '', deputados$nome)
 
+ # salvando em rdata
  
-  
+ save(deputados, file = "deputados.rda")
+ 
+ 
+###### EXERCICIO 4 ######################################################################
+ 
+# 6.1.1.
+ 
+ # pacotes necessários
+ 
+ if(require(rgdal) == F) install.packages("rgdal"); require(rgdal)
+ if(require(maptools) == F) install.packages("maptools"); require(maptools)
+ if(require(ggmap) == F) install.packages("ggmap"); require(ggmap)
+ if(require(mapproj) == F) install.packages("mapproj"); require(mapproj)
+ if(require(ggplot2) == F) install.packages("ggplot2"); require(ggplot2)
+ if(require(tidyverse) == F) install.packages("tidyverse"); require(tidyverse)
+ 
+  # lendo o shapefile
+ 
+  shapefile_pe <- readOGR("26MUE250GC_SIR.shp")
+
+ plot(shapefile_pe)
+
+ shapefile_pe@data
+
+ # convertendo o shapefile para dataframe 
+ 
+ shapefile_df <- fortify(shapefile_pe)
+ 
+ shapefile_data <- fortify(shapefile_pe@data)
+
+ shapefile_data$id <- row.names(shapefile_data) 
+
+ shapefile_df <- full_join(shapefile_df, shapefile_data, by="id")
+
+  # selecionar apenas os municipios da RMR
+ 
+ shapefile_df <- shapefile_df %>% filter(CD_GEOCMU %in% c( "2600054","2601052","2602902",
+                                           "2603454","2606200","2606804","2607604",
+                                           "2607208","2607752","2607901","2609402",
+                                           "2609600","2610707","2611606","2613701"))
+ 
+ 
+ # abrindo banco com IDHM
+ 
+ AtlasBrasil_Consulta <- read_excel("AtlasBrasil_Consulta.xlsx")
+ 
+ # mergindo com shapefile_df por codigo do mun
+ 
+ shapefile_df <- merge(shapefile_df, AtlasBrasil_Consulta, by = "CD_GEOCMU")
+ 
+ shapefile_df$IDH <- shapefile_df$`IDHM 2010`
+ shapefile_df$`IDHM 2010` <- NULL
+ 
+ # mapa
+ 
+ map <- ggplot() + geom_polygon(data = shapefile_df,
+                                aes(x = long, y = lat, group = group, fill = IDH),
+                                colour = "gray", size = .2) +
+   theme_void() + # essa é a função que dexa o fundo vazio
+   scale_fill_gradient2(low = "#deebf7", mid="#9ecae1", high = "#3182bd", # escala azul
+                        midpoint = median(shapefile_df$IDH),
+                        limits = range(shapefile_df$IDH)) +
+   coord_map()
+ 
+ map
+ 
+ 
+
+
+ 
