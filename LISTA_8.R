@@ -383,16 +383,16 @@ site <- as.data.frame(site)
  
  # mapa
  
- map <- ggplot() + geom_polygon(data = shapefile_df,
-                                aes(x = long, y = lat, group = group, fill = IDHM),
-                                colour = "gray", size = .2) +
-   theme_void() + # fundo vazio
-   scale_fill_gradient2(low = "#fff7bc", mid="#fec44f", high = "#d95f0e", # escala laranja
-                        midpoint = median(shapefile_df$IDHM),
-                        limits = range(shapefile_df$IDHM)) +
-   coord_map()
+ # mapa
  
+ map <- ggplot() + geom_polygon(data = shapefile_df,
+                                aes(x = long, y = lat, group = group, fill = IDHM)) +
+   theme_void() + # fundo vazio
+   guides(fill=guide_legend(title="IDHM (2010)")) +
+   scale_fill_gradient2(high = "#de2d26", low = "#fee0d2") +
+   coord_map()
  map
 
 gc()
+ 
  
